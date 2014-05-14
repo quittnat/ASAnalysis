@@ -24,9 +24,9 @@ DiPhotonMiniTree::DiPhotonMiniTree(TreeReader *tr, std::string dataType, Float_t
 
   global_is2011=false;
   global_is2012=false;
+  ismumug=false;
   if (year==2011) global_is2011=true;
   if (year==2012) global_is2012=true;
-
   if (isdata) assert(dataset_id==0);
   else assert(dataset_id!=0);
 
@@ -40,7 +40,7 @@ DiPhotonMiniTree::~DiPhotonMiniTree(){
 void DiPhotonMiniTree::Begin(){
 
   cout << "Begin" << endl;
-
+//MQ sel_cat
   treename[0] = TString("Tree_2Dstandard_selection");
   treename[1] = TString("Tree_1Drandomcone_template");
   treename[2] = TString("Tree_1Dsideband_template");
@@ -51,7 +51,9 @@ void DiPhotonMiniTree::Begin(){
   treename[7] = TString("Tree_2Drandomconesideband_template");
   treename[8] = TString("Tree_2Dsideband_template");
   treename[9] = TString("Tree_2Dstandard_preselection");
-  treename[10] = TString("Tree_2DZmumu_selection");
+//MQ->
+  treename[10] = TString("Tree_1Dmumug_selection");
+//<-MQ
   treename[11] = TString("Tree_1Dsignal_template");
   treename[12] = TString("Tree_1Dbackground_template");
   treename[13] = TString("Tree_2Dtruesigsig_template");
@@ -287,7 +289,7 @@ void DiPhotonMiniTree::Begin(){
   }
 
   inputtree_isinitialized = false;
-
+//used for efficiency and unfolding
   LightTreeGenReco = new TTree("LightTreeGenReco","LightTreeGenReco");
 
   LightTreeGenReco->Branch("event_luminormfactor",&event_luminormfactor,"event_luminormfactor/F");
@@ -347,7 +349,7 @@ void DiPhotonMiniTree::Begin(){
   InitEnergyScalesAndSmearingsDatabase();
 
 }
-
+//Analyze per event
 void DiPhotonMiniTree::Analyze(){
 
   //  cout << endl << "-----------------------" << endl;
@@ -428,14 +430,14 @@ void DiPhotonMiniTree::Analyze(){
     unscaled_sieie.push_back(fTR->PhoSigmaIetaIeta[i]);
     fTR->PhoR9[i] = R9Rescale(fTR->PhoR9[i],(bool)(fabs(fTR->PhoEta[i])<1.5));
     fTR->PhoSigmaIetaIeta[i] = SieieRescale(fTR->PhoSigmaIetaIeta[i],(bool)(fabs(fTR->PhoEta[i])<1.5));
+    //??
     CorrPhoton(fTR,i,&unscaled_r9);
     ordering.push_back(std::pair<int,float>(i,fTR->PhoPt[i]));
   }
   std::sort(ordering.begin(),ordering.end(),indexComparator);
-  
   photon_jet_matching.clear();
   for (int i=0; i<fTR->NPhotons; i++) photon_jet_matching.push_back(PFMatchPhotonToJet(i));
-
+//MQ  18 selections sel_cat
   std::vector<int> passing_selection[18];
   std::vector<int> passing_selection_jets[18];
   bool pass[18];
@@ -447,48 +449,36 @@ void DiPhotonMiniTree::Analyze(){
 
     if (isstep2 && sel_cat!=0) continue;
 
-    if (sel_cat!=10 && !passtrigger) continue; // no trigger for Zmumu selection
-
     if (isdata){
       if (sel_cat>=11) continue;
-      if (sel_cat>=9) continue;
+      if (sel_cat>=9) continue; 
       if (sel_cat==4 || sel_cat==5) continue;
     }
     else {
-      if (sel_cat==9 || sel_cat==10) continue;
+      if (sel_cat==9) continue; 
       if (sel_cat==4 || sel_cat==5) continue;
     }
 
     pass[sel_cat]=false;
 
     std::vector<int> passing;
+    std::vector<int> passing_mu;
     std::vector<int> passing_jets;
 
+//MQ dimuon selection
     if (sel_cat==10){
-      for (int i=0; i<fTR->NMus; i++){
-        passing.push_back(i);
+      ismumug==true;
+      bool passtrigger_mu = TriggerSelection();
+      if(passtrigger_mu==true){
+        passing_mu = MuonSelection(fTR, passing_mu);
+        passing = PhotonSelection(fTR,passing);
+        passing = FSRSelection(fTR, passing, passing_mu);
       }
-      passing = MuonSelection(fTR,passing);
-    }
-    else {
-      for (int i=0; i<fTR->NPhotons; i++){
-	passing.push_back(ordering.at(i).first);
-      }
-      for (int i=0; i<(int)(passing.size())-1; i++){
-	assert(fTR->PhoPt[passing.at(i)]>=fTR->PhoPt[passing.at(i+1)]);
-      }
-      passing = PhotonPreSelection(fTR,passing);
-
-      for (int i=0; i<fTR->NJets; i++) if (fTR->JEcorr.at(i)>0) passing_jets.push_back(i);
-      for (int i=0; i<(int)(passing_jets.size())-1; i++){
-	if (!(fTR->JPt[passing_jets.at(i)]>=fTR->JPt[passing_jets.at(i+1)])) cout << event_run << ":" << event_lumi << ":" << event_number << " " << fTR->JPt[passing_jets.at(i)] << " " << fTR->JPt[passing_jets.at(i+1)] << endl;
-        assert(fTR->JPt[passing_jets.at(i)]>=fTR->JPt[passing_jets.at(i+1)]);
-      }
-      JetSelection(passing_jets);
-
+//photons should pass standard event selection and should come from muons
+  //    pass[sel_cat] = StandardEventSelection(fTR,passing,passing_jets);
     }
 
-
+//MQ end dimuon selection
     if (sel_cat==0){
       passing = PhotonSelection(fTR,passing);
       pass[sel_cat] = StandardEventSelection(fTR,passing,passing_jets);
@@ -538,9 +528,6 @@ void DiPhotonMiniTree::Analyze(){
     }
     else if (sel_cat==9){
       pass[sel_cat] = StandardEventSelection(fTR,passing,passing_jets);
-    }
-    else if (sel_cat==10){
-      pass[sel_cat] = DiMuonFromZSelection(fTR,passing);
     }
     else if (sel_cat==11){
       passing = SignalSelection(fTR,passing);
@@ -642,13 +629,6 @@ void DiPhotonMiniTree::Analyze(){
       continue;
     }
 
-    if (sel_cat==10){
-      for (int i=0; i<passing.size(); i++){
-	ResetVars();
-	FillMuonInfo(passing.at(i));
-	OutputTree[sel_cat]->Fill();
-      }
-    }
     else if (is2d[sel_cat]){
       ResetVars();
       FillLead(passing.at(0),passing_jets);
@@ -900,18 +880,18 @@ void DiPhotonMiniTree::Analyze(){
     
   }
   
-
-  if (!isdata) { // lightweight tree for efficiency and unfolding studies
+  if (!isdata) { // lightweight tree for efficiency and unfolding studies MC
 
     ResetVars(); 
 
     std::vector<int> passing;
     for (int i=0; i<fTR->NPhotons; i++){
-      passing.push_back(ordering.at(i).first);
+      passing.push_back(ordering.at(i).first); 
     }
     for (int i=0; i<(int)(passing.size())-1; i++){
-      assert(fTR->PhoPt[passing.at(i)]>=fTR->PhoPt[passing.at(i+1)]);
+      assert(fTR->PhoPt[passing.at(i)]>=fTR->PhoPt[passing.at(i+1)]); 
     }
+
     passing = PhotonPreSelection(fTR,passing);
     passing = PhotonSelection(fTR,passing);
     
@@ -921,12 +901,12 @@ void DiPhotonMiniTree::Analyze(){
       assert(fTR->JPt[passing_jets.at(i)]>=fTR->JPt[passing_jets.at(i+1)]);
     }
     JetSelection(passing_jets);
-
+//pass acceptance cuts and standard selection
     tree_reco_in_acc = passtrigger && StandardEventSelection(fTR,passing,passing_jets);
     if (!tree_reco_in_acc) {passing.clear(); passing_jets.clear();}
-
+//isdy=drell yan
     bool isdy = (dataset_id==dy_dataset_id);
-
+//if in accepted selection and no dy but diphoton signal
     if (!isdy || tree_reco_in_acc){
 
     int NGenObjects = 0;
@@ -941,7 +921,8 @@ void DiPhotonMiniTree::Analyze(){
 	NGenObjects++;
       }
     }
-    if (isdy){
+//so we assume either no DY and if than just the one decaying into electrons???
+    if (isdy){ //and electron (11)
       for (int i=0; i<fTR->NGenLeptons; i++){
 	if (abs(fTR->GenLeptonID[i])!=11) continue;
 	GenObjectPt.push_back(fTR->GenLeptonPt[i]);
@@ -978,13 +959,14 @@ void DiPhotonMiniTree::Analyze(){
       bool pass=0;
       if (!isdy){
 	int mother = fTR->GenPhotonMotherID[*it];
-	if (mother>=-6 && mother<=6) pass=1;
-	if (mother==21) pass=1;
-	if (mother==22 && fTR->GenPhotonMotherStatus[*it]==3) pass=1;
+	if (mother>=-6 && mother<=6) pass=1;//???
+	if (mother==21) pass=1;//gluon
+	if (mother==22 && fTR->GenPhotonMotherStatus[*it]==3) pass=1;//photon from s
       }
       if (isdy) pass=1;
       if (!pass) it=passing_gen.erase(it); else it++;
     }
+//what is matching exactely???
     for (size_t i=0; i<passing_gen.size(); i++){
       for (vector<int>::iterator it = passing_gen_jets.begin(); it != passing_gen_jets.end(); ){
 	bool match = false;
@@ -1331,10 +1313,10 @@ float DiPhotonMiniTree::getEtaCorrectionBarrel(float eta){
   if ( iEta < 40.2198 ) return 1;
   return 1.0/(1 - 3.03103e-6*(iEta - 40.2198)*(iEta - 40.2198));
 };
-
+//MQ preselection
 std::vector<int> DiPhotonMiniTree::PhotonPreSelection(TreeReader *fTR, std::vector<int> passing){
 
-  for (vector<int>::iterator it = passing.begin(); it != passing.end(); ){ // SC matching
+  for (vector<int>::iterator it = passing.begin(); it != passing.end(); ){ // SC matching  <- technicl reason MQ
     if (fTR->PhotSCindex[*it]<0) it=passing.erase(it); else it++;
   }
 
@@ -1347,7 +1329,7 @@ std::vector<int> DiPhotonMiniTree::PhotonPreSelection(TreeReader *fTR, std::vect
     float eta=fTR->PhoEta[*it];
     if (fabs(eta)>2.5) it=passing.erase(it); else it++;
   }
-
+//MQ SC small geometric correction 
   for (vector<int>::iterator it = passing.begin(); it != passing.end(); ){ // Pt cut on RawEnCetaCorr
     float energy=fTR->SCRaw[fTR->PhotSCindex[*it]];
     float eta=fTR->SCEta[fTR->PhotSCindex[*it]];
@@ -1362,8 +1344,10 @@ std::vector<int> DiPhotonMiniTree::PhotonPreSelection(TreeReader *fTR, std::vect
 //    if ((phocorr->isInPhiCracks(phi,eta)) || (phocorr->isInEBEtaCracks(eta))) it=passing.erase(it); else it++;
 //  }
 
+   //MQ event preslection for photons for 8 TeV from Hgg
   // MVA presel from Hgg
-
+//MQ year switch
+ if (year==2011){
   for (vector<int>::iterator it = passing.begin(); it != passing.end(); ){ // HoverE cut
     float r9=fTR->PhoR9[*it];
     float eta=fTR->SCEta[fTR->PhotSCindex[*it]];
@@ -1395,6 +1379,47 @@ std::vector<int> DiPhotonMiniTree::PhotonPreSelection(TreeReader *fTR, std::vect
     if (r9>0.9 && etcorrecaliso<50 && etcorrhcaliso<50 && etcorrtrkiso<50) pass=1;
     if (!pass) it=passing.erase(it); else it++;
   }
+ }
+//MQ besides siphiiphi cut no difference to 2011 see AN2012-160-v6
+if (year==2012){
+  for (vector<int>::iterator it = passing.begin(); it != passing.end(); ){ // HoverE cut
+    float r9=fTR->PhoR9[*it];
+    float eta=fTR->SCEta[fTR->PhotSCindex[*it]];
+    float hoe=fTR->PhoHoverE2012[*it]; //new single tower
+    bool pass=0;
+    if (fabs(eta)<1.4442 && r9<0.9 && hoe<0.075) pass=1;
+    if (fabs(eta)<1.4442 && r9>0.9 && hoe<0.082) pass=1;
+    if (fabs(eta)>1.566 && r9<0.9 && hoe<0.075) pass=1;
+    if (fabs(eta)>1.566 && r9>0.9 && hoe<0.075) pass=1;
+    if (!pass) it=passing.erase(it); else it++;
+  }
+
+  for (vector<int>::iterator it = passing.begin(); it != passing.end(); ){ // sieie cut
+    float eta=fTR->SCEta[fTR->PhotSCindex[*it]];
+    float sieie=fTR->PhoSigmaIetaIeta[*it];
+    float siphiiphi=fTR->PhoSigmaIphiIphi[*it];
+    bool pass=0;
+    if (fabs(eta)<1.4442 && sieie<0.014 && sieie>0.001 && siphiiphi>0.001) pass=1; 
+    if (fabs(eta)>1.566 && sieie<0.034 &&  sieie>0.001 && siphiiphi>0.001) pass=1;
+    if (!pass) it=passing.erase(it); else it++;
+  }
+
+  for (vector<int>::iterator it = passing.begin(); it != passing.end(); ){ // isolation cuts (trigger)
+    float r9=fTR->PhoR9[*it];
+    bool pass=0;
+    float etcorrecaliso=fTR->PhoIso03Ecal[*it]-0.012*fTR->PhoPt[*it];
+    float etcorrhcaliso=fTR->PhoIso03Hcal[*it]-0.005*fTR->PhoPt[*it];
+    float etcorrtrkiso=fTR->PhoIso03TrkHollow[*it]-0.002*fTR->PhoPt[*it];
+    if (r9<0.9 && etcorrecaliso<4 && etcorrhcaliso<4 && etcorrtrkiso<4) pass=1;
+    if (r9>0.9 && etcorrecaliso<50 && etcorrhcaliso<50 && etcorrtrkiso<50) pass=1;
+    if (!pass) it=passing.erase(it); else it++;
+   
+  }
+//MQ extra pt cut 10GeV for FSR of mumugamma
+  for (vector<int>::iterator it = passing.begin(); it != passing.end(); ){
+    if (fTR->PhoPt[*it]<10.) it=passing.erase(it); else it++;
+  }
+ }
 
 //  XXX EM ENRICHMENT PRESELECTION NOT APPLIED
 //  for (vector<int>::iterator it = passing.begin(); it != passing.end(); ){ // isolation cuts (filter)
@@ -1406,29 +1431,64 @@ std::vector<int> DiPhotonMiniTree::PhotonPreSelection(TreeReader *fTR, std::vect
   return passing;
 
 };
-
-std::vector<int> DiPhotonMiniTree::MuonSelection(TreeReader *fTR, std::vector<int> passing){
-
-  for (vector<int>::iterator it = passing.begin(); it != passing.end(); ){
+//MQ Muon selection
+std::vector<int> DiPhotonMiniTree::MuonSelection(TreeReader *fTR, std::vector<int> passing_mu){
+std::vector<std::pair<int,float> > ordering_mu;
+  for (vector<int>::iterator it = passing_mu.begin(); it != passing_mu.end(); ){
     float eta=fTR->MuEta[*it];
-    if ((fabs(eta)>1.4442 && fabs(eta)<1.566) || (fabs(eta)>2.5)) it=passing.erase(it); else it++;
+    if ((fabs(eta)>1.4442 && fabs(eta)<1.566) || (fabs(eta)>2.5)) it=passing_mu.erase(it); else it++;
   }
 
-  for (vector<int>::iterator it = passing.begin(); it != passing.end(); ){
-    if (fTR->MuPt[*it]<10) it=passing.erase(it); else it++;
+  for (vector<int>::iterator it = passing_mu.begin(); it != passing_mu.end(); ){
+    if (fTR->MuPt[*it]<10.5) it=passing_mu.erase(it); else it++;
   }
-
-  for (vector<int>::iterator it = passing.begin(); it != passing.end(); ){
-    if (!(fTR->MuIsGlobalMuon[*it] || fTR->MuIsTrackerMuon[*it])) it=passing.erase(it); else it++;
+  
+  for (vector<int>::iterator it = passing_mu.begin(); it != passing_mu.end(); ){
+    if (!IsTightMuon(*it)) it=passing_mu.erase(it); else it++;  
   }
+  for (int i=0; i<fTR->NMus; i++){
+    ordering_mu.push_back(std::pair<int,float>(i,fTR->MuPt[i]));
+  }
+ std::sort(ordering_mu.begin(),ordering_mu.end(),indexComparator); 
+  //for (vector<int>::iterator it = passing_mu.begin(); it != passing_mu.end(); ){
+//    if (!(fTR->MuIsGlobalMuon[*it] || fTR->MuIsTrackerMuon[*it])) it=passing_mu.erase(it); else it++;
+ // }
+  
+ // for (vector<int>::iterator it = passing_mu.begin(); it != passing_mu.end(); ){
+  //  if (fTR->MuRelIso03[*it]>0.15) it=passing_mu.erase(it); else it++;
+ // }
 
-//  for (vector<int>::iterator it = passing.begin(); it != passing.end(); ){
-//    if (fTR->MuRelIso03[*it]>0.15) it=passing.erase(it); else it++;
-//  }
-
-  return passing;
+  return passing_mu;
 
 };
+//based on  Marc Duenser's defintion
+bool DiPhotonMiniTree::IsTightMuon(int ind){
+    // Basic muon cleaning and ID
+    if(fTR->MuIsGlobalMuon[ind] == 0)    return false;
+    if(fTR->MuIsPFMuon[ind] == 0)        return false;
+
+    if(fTR->MuNChi2[ind] > 10)           return false;
+
+    if(fTR->MuNGlMuHits.size() > 0){
+        if(fTR->MuNGlMuHits [ind] < 1)       return false; // muon.globalTrack()->hitPattern().numberOfValidMuonHits() 
+    }
+    else{
+        if(fTR->MuNMuHits [ind] < 1)         return false; // this is on the outer track: muon.outerTrack()->hitPattern().numberOfValidHits()
+    }
+
+    if(fTR->MuNMatchedStations[ind] < 2) return false; // muon.numberOfMatchedStations()
+
+    if(fabs(fTR->MuD0PV[ind])     > 0.2) return false;
+
+    if(fabs(fTR->MuDzPV[ind])     > 0.5) return false;
+
+    if(fTR->MuNPxHits[ind] < 1)          return false; // muon.innerTrack()->hitPattern().numberOfValidPixelHits()
+
+    if(fTR->MuNSiLayers[ind] < 8)        return false; // MQ recommondations is 8 muon.innerTrack()->hitPattern().trackerLayersWithMeasurement()
+    return true;
+}
+
+
 
 std::vector<int> DiPhotonMiniTree::GenLevelIsolationCut(TreeReader *fTR, std::vector<int> passing){
 
@@ -1641,21 +1701,36 @@ bool DiPhotonMiniTree::VetoJetPhotonOverlap(std::vector<int> &passing, std::vect
 
 };
 
-bool DiPhotonMiniTree::DiMuonFromZSelection(TreeReader *fTR, std::vector<int> &passing){
+//->MQ dimuongamma FSR selection
+std::vector<int> DiPhotonMiniTree::FSRSelection(TreeReader *fTR, std::vector<int> passing, std::vector<int> passing_mu){
+  for (vector<int>::iterator it = passing.begin(); it != passing.end(); ){ 
+     if (fTR->PhoPt[*it]<25) it=passing.erase(it); else it++;
+     for (int i=0; i<fTR->NPhotons; i++){
+      for (vector<int>::iterator it_mu = passing_mu.begin(); it_mu != passing_mu.end(); ){
+        if (fTR->MuPt[passing_mu.at(0)] < 25.) continue;
+        if (passing_mu.size()<2) continue;
+         passing_mu.resize(2);
+        float dR1 = Util::GetDeltaR(fTR->PhoEta[i],fTR->MuEta[passing_mu.at(0)],fTR->PhoPhi[i],fTR->MuPhi[passing_mu.at(0)]);
+        float dR2 = Util::GetDeltaR(fTR->PhoEta[i],fTR->MuEta[passing_mu.at(1)],fTR->PhoPhi[i],fTR->MuPhi[passing_mu.at(1)]);
+        if (dR1 > 0.8 && dR2 > 0.8) it=passing.erase(it); else it++;
+        
+        TLorentzVector mu1(fTR->MuPx[passing_mu.at(0)],fTR->MuPy[passing_mu.at(0)],fTR->MuPz[passing_mu.at(0)],fTR->MuE[passing_mu.at(0)]);
+        TLorentzVector mu2(fTR->MuPx[passing_mu.at(1)],fTR->MuPy[passing_mu.at(1)],fTR->MuPz[passing_mu.at(1)],fTR->MuE[passing_mu.at(1)]);
+        TLorentzVector pho(fTR->PhoPx[i],fTR->PhoPy[i],fTR->PhoPz[i],fTR->PhoEnergy[i]);
+        float invmass_mumu = (mu1+mu2).M();
+        float invmass_mumug = (mu1+mu2+pho).M(); 
+        if(invmass_mumug > 120.) continue;
+        if(invmass_mumug < 60.) continue; 
+        if (invmass_mumu < 35.0) continue;
+        if(invmass_mumu + invmass_mumug > 180.) continue;
+      }
+   }
+  }
+  return passing;
 
-  if (passing.size()<2) return false;
-
-  passing.resize(2); // keep only the first two
-
-  TLorentzVector mu1(fTR->MuPx[passing.at(0)],fTR->MuPy[passing.at(0)],fTR->MuPz[passing.at(0)],fTR->MuE[passing.at(0)]);
-  TLorentzVector mu2(fTR->MuPx[passing.at(1)],fTR->MuPy[passing.at(1)],fTR->MuPz[passing.at(1)],fTR->MuE[passing.at(1)]);
-
-  float invmass0 = (mu1+mu2).M();
-
-  if (fabs(invmass0-91.2)>10) return false;
-
-  return true;
 };
+
+//<- MQ
 
 bool DiPhotonMiniTree::TriggerSelection(){
   if (!isdata) return true; // trigger sel off in MC

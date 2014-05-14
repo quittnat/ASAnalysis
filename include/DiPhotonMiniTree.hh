@@ -64,7 +64,8 @@ const int nclosest_inputmatching = 40;
 // CAREFUL if you set this to true: the selection of saved pfcandidates,
 // for instance, is decided at ntuple production level.
 // Check that you really don't have to re-run the ntuple as well.
-const bool do_recalc_isolation = false;
+//MQ recalculation of isolation to also save PF candidates entering isolation cones
+const bool do_recalc_isolation = true;
 // ------------------------------------
 
 typedef struct {
@@ -144,7 +145,9 @@ private:
   int year;
   bool global_is2011;
   bool global_is2012;
-
+//MQ->
+  bool ismumug;
+//<-MQ
   TGeoPara eegeom;
 
   Float_t* kfactors;
@@ -155,6 +158,8 @@ private:
   std::vector<int> ApplyPixelVeto(TreeReader *fTR, vector<int> passing, bool forelectron=0);
   std::vector<int> PhotonPreSelection(TreeReader *fTR, vector<int> passing);
   std::vector<int> GenLevelIsolationCut(TreeReader *fTR, vector<int> passing);
+//MQ mumugamma
+  std::vector<int> FSRSelection(TreeReader *fTR, std::vector<int> passing, std::vector<int> passing_mu);
   std::vector<int> PhotonSelection(TreeReader *fTR, vector<int> passing, TString mode="");
   std::vector<int> SignalSelection(TreeReader *fTR, vector<int> passing);
   std::vector<int> BackgroundSelection(TreeReader *fTR, vector<int> passing);
@@ -213,6 +218,9 @@ private:
   void FillJetsInfo(std::vector<int> passing, std::vector<int> passing_jets);
   void FillGenJetsInfo(std::vector<int> passing_gen, std::vector<int> passing_gen_jets);
 
+  jetmatching_struct PFMatchPhotonToJet(int a);
+
+
   //  double etaTransformation(float EtaParticle, float Zvertex);
   double phiNorm(float phi);
   isolations_struct RandomConeIsolation(TreeReader *fTR, int phoqi, TString mod="");
@@ -224,6 +232,7 @@ private:
 
   std::vector<int> MuonSelection(TreeReader *fTR, std::vector<int> passing);
   bool DiMuonFromZSelection(TreeReader *fTR, std::vector<int> &passing);
+  bool IsTightMuon(int ind);
   float PFPhotonIsolationAroundMuon(int muqi, int *counter, std::vector<float> *energies = NULL, std::vector<float> *ets = NULL,  std::vector<float> *detas = NULL, std::vector<float> *dphis = NULL);
   void FillMuonInfo(int index);
 
@@ -238,8 +247,6 @@ private:
     }
   };
   IndexByPt indexComparator;
-
-  jetmatching_struct PFMatchPhotonToJet(int phoqi);
 
   TRandom3 *randomgen;
   TRandom3 *randomgen_forEsmearing;
@@ -560,15 +567,12 @@ private:
   Int_t matchingtree_index_1event_bkgbkg_1[nclosest_inputmatching];
   Int_t matchingtree_index_1event_bkgbkg_2[nclosest_inputmatching];
   Int_t matchingtree_index_2events_sigsig_1[nclosest_inputmatching];
-  Int_t matchingtree_index_2events_sigsig_2[nclosest_inputmatching];
   Int_t matchingtree_index_2events_sigbkg_1[nclosest_inputmatching];
+  Int_t matchingtree_index_2events_sigsig_2[nclosest_inputmatching];
   Int_t matchingtree_index_2events_sigbkg_2[nclosest_inputmatching];
   Int_t matchingtree_index_2events_bkgsig_1[nclosest_inputmatching];
-  Int_t matchingtree_index_2events_bkgsig_2[nclosest_inputmatching];
-  Int_t matchingtree_index_2events_bkgbkg_1[nclosest_inputmatching];
+  Int_t matchingtree_index_2events_bkgsig_2[nclosest_inputmatching]; 
   Int_t matchingtree_index_2events_bkgbkg_2[nclosest_inputmatching];
-
-
-
+  Int_t matchingtree_index_2events_bkgbkg_1[nclosest_inputmatching];
 };
 #endif
