@@ -467,17 +467,25 @@ void DiPhotonMiniTree::Analyze(){
 
 //MQ dimuon selection
     if (sel_cat==10){
-      ismumug==true;
+      ismumug=true;
       bool passtrigger_mu = TriggerSelection();
-      if(passtrigger_mu==true){
+      if(passtrigger_mu=true){
+        std::vector<std::pair<int,float> > ordering_mu;
+        for (int i=0; i<fTR->NMus; i++){
+         ordering_mu.push_back(std::pair<int,float>(i,fTR->MuPt[i]));
+        }
+        std::sort(ordering_mu.begin(),ordering_mu.end(),indexComparator);
+       
         passing_mu = MuonSelection(fTR, passing_mu);
         passing = PhotonSelection(fTR,passing);
-        passing = FSRSelection(fTR, passing, passing_mu);
+        pass[sel_cat] = FSRSelection(fTR, passing, passing_mu);
       }
 //photons should pass standard event selection and should come from muons
   //    pass[sel_cat] = StandardEventSelection(fTR,passing,passing_jets);
     }
-
+    else if(sel_cat !=10) {
+      ismumug=false;
+    }
 //MQ end dimuon selection
     if (sel_cat==0){
       passing = PhotonSelection(fTR,passing);
@@ -606,15 +614,13 @@ void DiPhotonMiniTree::Analyze(){
 
     if (isstep2 && sel_cat!=0) continue;
 
-    if (sel_cat!=10 && !passtrigger) continue; // no trigger for Zmumu selection
-
     if (isdata){
       if (sel_cat>=11) continue;
-      if (sel_cat>=9) continue;
+      if (sel_cat==9) continue;
       if (sel_cat==4 || sel_cat==5) continue;
     }
     else {
-      if (sel_cat==9 || sel_cat==10) continue;
+      if (sel_cat==9) continue;
       if (sel_cat==4 || sel_cat==5) continue;
     }
 
@@ -787,7 +793,7 @@ void DiPhotonMiniTree::Analyze(){
       if (dofill) OutputTree[sel_cat]->Fill();
       if (dofill && sel_cat==7) if (isdata && !isstep2) OutputExtraTree[sel_cat]->Fill();
     }
-
+//MQ not 2d selection
     else if (!is2d[sel_cat]){
 
       for (int i=0; i<passing.size(); i++){
@@ -1433,11 +1439,6 @@ if (year==2012){
 };
 //MQ Muon selection
 std::vector<int> DiPhotonMiniTree::MuonSelection(TreeReader *fTR, std::vector<int> passing_mu){
-std::vector<std::pair<int,float> > ordering_mu;
-  for (vector<int>::iterator it = passing_mu.begin(); it != passing_mu.end(); ){
-    float eta=fTR->MuEta[*it];
-    if ((fabs(eta)>1.4442 && fabs(eta)<1.566) || (fabs(eta)>2.5)) it=passing_mu.erase(it); else it++;
-  }
 
   for (vector<int>::iterator it = passing_mu.begin(); it != passing_mu.end(); ){
     if (fTR->MuPt[*it]<10.5) it=passing_mu.erase(it); else it++;
@@ -1446,10 +1447,6 @@ std::vector<std::pair<int,float> > ordering_mu;
   for (vector<int>::iterator it = passing_mu.begin(); it != passing_mu.end(); ){
     if (!IsTightMuon(*it)) it=passing_mu.erase(it); else it++;  
   }
-  for (int i=0; i<fTR->NMus; i++){
-    ordering_mu.push_back(std::pair<int,float>(i,fTR->MuPt[i]));
-  }
- std::sort(ordering_mu.begin(),ordering_mu.end(),indexComparator); 
   //for (vector<int>::iterator it = passing_mu.begin(); it != passing_mu.end(); ){
 //    if (!(fTR->MuIsGlobalMuon[*it] || fTR->MuIsTrackerMuon[*it])) it=passing_mu.erase(it); else it++;
  // }
@@ -1702,32 +1699,29 @@ bool DiPhotonMiniTree::VetoJetPhotonOverlap(std::vector<int> &passing, std::vect
 };
 
 //->MQ dimuongamma FSR selection
-std::vector<int> DiPhotonMiniTree::FSRSelection(TreeReader *fTR, std::vector<int> passing, std::vector<int> passing_mu){
-  for (vector<int>::iterator it = passing.begin(); it != passing.end(); ){ 
+bool DiPhotonMiniTree::FSRSelection(TreeReader *fTR, std::vector<int>  &passing, std::vector<int>  &passing_mu){
+ if (fTR->MuPt[passing_mu.at(0)] < 25. && passing_mu.size()<2){
+   passing_mu.resize(2);//keep only the first two
+
+//iterate over photons from Photonselection
+   for (vector<int>::iterator it = passing.begin(); it != passing.end(); ){ 
      if (fTR->PhoPt[*it]<25) it=passing.erase(it); else it++;
-     for (int i=0; i<fTR->NPhotons; i++){
-      for (vector<int>::iterator it_mu = passing_mu.begin(); it_mu != passing_mu.end(); ){
-        if (fTR->MuPt[passing_mu.at(0)] < 25.) continue;
-        if (passing_mu.size()<2) continue;
-         passing_mu.resize(2);
-        float dR1 = Util::GetDeltaR(fTR->PhoEta[i],fTR->MuEta[passing_mu.at(0)],fTR->PhoPhi[i],fTR->MuPhi[passing_mu.at(0)]);
-        float dR2 = Util::GetDeltaR(fTR->PhoEta[i],fTR->MuEta[passing_mu.at(1)],fTR->PhoPhi[i],fTR->MuPhi[passing_mu.at(1)]);
+        float dR1 = Util::GetDeltaR(fTR->PhoEta[*it],fTR->MuEta[passing_mu.at(0)],fTR->PhoPhi[*it],fTR->MuPhi[passing_mu.at(0)]);
+        float dR2 = Util::GetDeltaR(fTR->PhoEta[*it],fTR->MuEta[passing_mu.at(1)],fTR->PhoPhi[*it],fTR->MuPhi[passing_mu.at(1)]);
         if (dR1 > 0.8 && dR2 > 0.8) it=passing.erase(it); else it++;
         
         TLorentzVector mu1(fTR->MuPx[passing_mu.at(0)],fTR->MuPy[passing_mu.at(0)],fTR->MuPz[passing_mu.at(0)],fTR->MuE[passing_mu.at(0)]);
         TLorentzVector mu2(fTR->MuPx[passing_mu.at(1)],fTR->MuPy[passing_mu.at(1)],fTR->MuPz[passing_mu.at(1)],fTR->MuE[passing_mu.at(1)]);
-        TLorentzVector pho(fTR->PhoPx[i],fTR->PhoPy[i],fTR->PhoPz[i],fTR->PhoEnergy[i]);
+        TLorentzVector pho(fTR->PhoPx[*it],fTR->PhoPy[*it],fTR->PhoPz[*it],fTR->PhoEnergy[*it]);
         float invmass_mumu = (mu1+mu2).M();
         float invmass_mumug = (mu1+mu2+pho).M(); 
-        if(invmass_mumug > 120.) continue;
-        if(invmass_mumug < 60.) continue; 
-        if (invmass_mumu < 35.0) continue;
-        if(invmass_mumu + invmass_mumug > 180.) continue;
-      }
+        if(invmass_mumug > 120.) it=passing.erase(it); else it++;
+        if(invmass_mumug < 60.) it=passing.erase(it); else it++;
+        if (invmass_mumu < 35.0) it=passing.erase(it); else it++;
+        if(invmass_mumu + invmass_mumug > 180.) it=passing.erase(it); else it++;
    }
-  }
-  return passing;
-
+ }
+ if(passing.size()==1) return true;
 };
 
 //<- MQ

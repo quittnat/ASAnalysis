@@ -158,13 +158,12 @@ private:
   std::vector<int> ApplyPixelVeto(TreeReader *fTR, vector<int> passing, bool forelectron=0);
   std::vector<int> PhotonPreSelection(TreeReader *fTR, vector<int> passing);
   std::vector<int> GenLevelIsolationCut(TreeReader *fTR, vector<int> passing);
-//MQ mumugamma
-  std::vector<int> FSRSelection(TreeReader *fTR, std::vector<int> passing, std::vector<int> passing_mu);
   std::vector<int> PhotonSelection(TreeReader *fTR, vector<int> passing, TString mode="");
   std::vector<int> SignalSelection(TreeReader *fTR, vector<int> passing);
   std::vector<int> BackgroundSelection(TreeReader *fTR, vector<int> passing);
   std::vector<int> ImpingingTrackSelection(TreeReader *fTR, std::vector<int> passing, bool invert=false);
   std::vector<int> GetPFCandRemovals(TreeReader *fTR, int phoqi);
+  bool FSRSelection(TreeReader *fTR, std::vector<int> &passing, std::vector<int> &passing_mu);
   bool SinglePhotonEventSelection(TreeReader *fTR, std::vector<int> &passing);
   bool StandardEventSelection(TreeReader *fTR, std::vector<int> &passing, std::vector<int> &passing_jets);
   bool VetoJetPhotonOverlap(std::vector<int> &passing, std::vector<int> &passing_jets);
@@ -231,7 +230,6 @@ private:
   std::set<int> NChargedHadronsInConeSelection(TreeReader *fTR, std::vector<int> passing, int minimum=0, int maximum=9999);
 
   std::vector<int> MuonSelection(TreeReader *fTR, std::vector<int> passing);
-  bool DiMuonFromZSelection(TreeReader *fTR, std::vector<int> &passing);
   bool IsTightMuon(int ind);
   float PFPhotonIsolationAroundMuon(int muqi, int *counter, std::vector<float> *energies = NULL, std::vector<float> *ets = NULL,  std::vector<float> *detas = NULL, std::vector<float> *dphis = NULL);
   void FillMuonInfo(int index);
