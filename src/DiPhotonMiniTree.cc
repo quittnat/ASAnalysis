@@ -469,7 +469,7 @@ void DiPhotonMiniTree::Analyze(){
     if (sel_cat==10){
       ismumug=true;
       bool passtrigger_mu = TriggerSelection();
-      if(passtrigger_mu=true){
+      if(passtrigger_mu==true){
         std::vector<std::pair<int,float> > ordering_mu;
         for (int i=0; i<fTR->NMus; i++){
          ordering_mu.push_back(std::pair<int,float>(i,fTR->MuPt[i]));
@@ -1700,7 +1700,7 @@ bool DiPhotonMiniTree::VetoJetPhotonOverlap(std::vector<int> &passing, std::vect
 
 //->MQ dimuongamma FSR selection
 bool DiPhotonMiniTree::FSRSelection(TreeReader *fTR, std::vector<int>  &passing, std::vector<int>  &passing_mu){
- if (fTR->MuPt[passing_mu.at(0)] < 25. && passing_mu.size()<2){
+ if (fTR->MuPt[passing_mu.at(0)] > 25. && passing_mu.size() >=2){
    passing_mu.resize(2);//keep only the first two
 
 //iterate over photons from Photonselection
@@ -1721,8 +1721,15 @@ bool DiPhotonMiniTree::FSRSelection(TreeReader *fTR, std::vector<int>  &passing,
         if(invmass_mumu + invmass_mumug > 180.) it=passing.erase(it); else it++;
    }
  }
- if(passing.size()==1) return true;
-};
+ if(passing.size()>=1) {
+  passing.resize(1);
+  return true;
+ }
+ if(passing.size()==0){
+  passing.clear();
+  return false;
+ }
+ };
 
 //<- MQ
 
