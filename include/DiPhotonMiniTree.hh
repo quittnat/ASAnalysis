@@ -64,7 +64,7 @@ typedef enum {
   k2Drandomconesideband_template=7,
   k2Dsideband_template=8,
   k2Dstandard_preselection=9,
-  k2DZmumu_selection=10,
+  k1DZmumug_selection=10,
   k1Dsignal_template=11,
   k1Dbackground_template=12,
   k2Dtruesigsig_template=13,
@@ -72,6 +72,7 @@ typedef enum {
   k2Dtruebkgbkg_template=15,
   k2Drconeplusgenfake_template=16,
   k2Dgenpromptplussideband_template=17,
+//  k2Ddimuon_selection=18,
   kLightDefault=100,
   kLightJECup=101,
   kLightJECdown=102,
@@ -277,7 +278,9 @@ private:
   int year;
   bool global_is2011;
   bool global_is2012;
-
+ //MQ->
+  bool ismumug;
+  //<-MQ
   TGeoPara eegeom;
 
   Float_t* kfactors;
@@ -297,6 +300,7 @@ private:
   std::vector<int> BackgroundSelection(TreeReader *fTR, vector<int> passing);
   std::vector<int> ImpingingTrackSelection(TreeReader *fTR, std::vector<int> passing, bool invert=false);
   std::vector<int> GetPFCandRemovals(TreeReader *fTR, int phoqi);
+  bool FSRSelection(TreeReader *fTR, std::vector<int> &passing, std::vector<int> &passing_mu);
   bool SinglePhotonEventSelection(TreeReader *fTR, std::vector<int> &passing);
   bool StandardEventSelection(TreeReader *fTR, std::vector<int> &passing, std::vector<int> &passing_jets);
   bool VetoJetPhotonOverlap(std::vector<int> &passing, std::vector<int> &passing_jets);
@@ -365,11 +369,13 @@ private:
   std::set<int> NChargedHadronsInConeSelection(TreeReader *fTR, std::vector<int> passing, int minimum=0, int maximum=9999);
 
   std::vector<int> MuonSelection(TreeReader *fTR, std::vector<int> passing);
+  bool IsTightMuon(int ind);
   bool DiMuonFromZSelection(TreeReader *fTR, std::vector<int> &passing);
   float PFPhotonIsolationAroundMuon(int muqi, int *counter, std::vector<float> *energies = NULL, std::vector<float> *ets = NULL,  std::vector<float> *detas = NULL, std::vector<float> *dphis = NULL);
-  void FillMuonInfo(int index);
-
-  bool PassPrimaryVertexFilter();
+  void FillMuonInfo(std::vector<int> &passing_mu,std::vector<int> &passing);
+  void FillVtxInfo(TreeReader *fTR,std::vector<int> &passing);
+void H2ggVtxInfo(TreeReader *fTR,std::vector<int> &passing); 
+ bool PassPrimaryVertexFilter();
 
   float DeltaPhiSigned(float phi1, float phi2);
 
@@ -445,7 +451,19 @@ private:
   Float_t pholead_SCphi, photrail_SCphi;
  
   Int_t pholead_PhoHasPixSeed, photrail_PhoHasPixSeed;
-
+//MQ Dimuon
+    Float_t mulead_eta, mutrail_eta;
+    Float_t mulead_phi, mutrail_phi;
+    Float_t mulead_pt, mutrail_pt;
+    Float_t mulead_energy, mutrail_energy;
+    Float_t  mass_mumu, mass_mumug;
+     Float_t  dR1, dR2;
+ //MQ
+    Int_t diphoton_h2ggvtx;
+  Float_t pholead_std_Vx,pholead_std_Vy,pholead_std_Vz;   
+  Float_t photrail_std_Vx,photrail_std_Vy,photrail_std_Vz;
+  Float_t diphoton_h2ggvtx_Vx,diphoton_h2ggvtx_Vy,diphoton_h2ggvtx_Vz;
+  Float_t primVtxx, primVtxy,primVtxz,primVtxPtSum;
   Float_t pholead_r9, photrail_r9;
   Float_t pholead_sieie, photrail_sieie;
   Float_t pholead_hoe, photrail_hoe;

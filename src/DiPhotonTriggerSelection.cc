@@ -60,9 +60,14 @@ if (isdata){
 
   }
 
-  if (global_is2012){
-    nametriggers.push_back("HLT_Photon36_R9Id85_OR_CaloId10_Iso50_Photon22_R9Id85_OR_CaloId10_Iso50_v");
-  }
+    if (global_is2012 && !ismumug){
+      nametriggers.push_back("HLT_Photon36_R9Id85_OR_CaloId10_Iso50_Photon22_R9Id85_OR_CaloId10_Iso50_v");
+    }
+    else if(global_is2012 && ismumug){
+	    nametriggers.push_back("HLT_Mu17_TkMu8_v");
+	 //   cout << "Info 0: right trigger" << endl;
+    }    
+  
 
  }
 

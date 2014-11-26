@@ -452,7 +452,7 @@ def sanitycheck(name,path):
 		return " ... ok !"
 
 def SendMeAMail(mypath):
-	os.system('echo Done  | mail -s \"Finished '+mypath+'\" Marco.Peruzzi@cern.ch')
+	os.system('echo Done  | mail -s \"Finished '+mypath+'\" milena.quittnat@cern.ch')
 
 ##################################################################################
 #                                  MAIN                                          #
