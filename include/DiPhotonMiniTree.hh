@@ -361,6 +361,9 @@ private:
   void FillJetsInfo(std::vector<int> passing, std::vector<int> passing_jets);
   void FillGenJetsInfo(std::vector<int> passing_gen, std::vector<int> passing_gen_jets);
 
+  jetmatching_struct PFMatchPhotonToJet(int a);
+
+
   //  double etaTransformation(float EtaParticle, float Zvertex);
   double phiNorm(float phi);
   isolations_struct RandomConeIsolation(TreeReader *fTR, int phoqi, TString mod="");
@@ -730,15 +733,12 @@ void H2ggVtxInfo(TreeReader *fTR,std::vector<int> &passing);
   Int_t matchingtree_index_1event_bkgbkg_1[nclosest_inputmatching];
   Int_t matchingtree_index_1event_bkgbkg_2[nclosest_inputmatching];
   Int_t matchingtree_index_2events_sigsig_1[nclosest_inputmatching];
-  Int_t matchingtree_index_2events_sigsig_2[nclosest_inputmatching];
   Int_t matchingtree_index_2events_sigbkg_1[nclosest_inputmatching];
+  Int_t matchingtree_index_2events_sigsig_2[nclosest_inputmatching];
   Int_t matchingtree_index_2events_sigbkg_2[nclosest_inputmatching];
   Int_t matchingtree_index_2events_bkgsig_1[nclosest_inputmatching];
-  Int_t matchingtree_index_2events_bkgsig_2[nclosest_inputmatching];
-  Int_t matchingtree_index_2events_bkgbkg_1[nclosest_inputmatching];
+  Int_t matchingtree_index_2events_bkgsig_2[nclosest_inputmatching]; 
   Int_t matchingtree_index_2events_bkgbkg_2[nclosest_inputmatching];
-
-
-
+  Int_t matchingtree_index_2events_bkgbkg_1[nclosest_inputmatching];
 };
 #endif

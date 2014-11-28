@@ -69,7 +69,6 @@ if (isdata){
     }    
   
 
- }
 
 
 if (!isdata){
