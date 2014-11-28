@@ -418,8 +418,7 @@ void DiPhotonMiniTree::Analyze(){
   else{
   event_luminormfactor*=fTR->GenWeight;
   }
-//cout << "event_luminormfactor  " << event_luminormfactor << endl;
-//cout << "event_luminormfactor*=fTR->GenWeight; " << fTR->GenWeight << endl;
+  fPNumEvents->SetVal(fPNumEvents->GetVal()+1);
   fPSumWeights->SetVal(fPSumWeights->GetVal()+fTR->GenWeight);
   fPSumWeights2->SetVal(fPSumWeights2->GetVal()+fTR->GenWeight*fTR->GenWeight);
 
@@ -491,6 +490,7 @@ void DiPhotonMiniTree::Analyze(){
   for (int i=0; i<fTR->NPhotons; i++){
     if (!isdata) FixMatchingStatusElectrons(i); // correct match exit code for photons matched to gen electrons
     if (dataset_id==sherpa_dataset_id) FixMatchingStatusSherpa(i); // correct match exit code for SHERPA
+    FixIsolationGeometricCorrection(i);
     unscaled_energy.push_back(fTR->PhoEnergy[i]);
   }
 
@@ -796,7 +796,7 @@ void DiPhotonMiniTree::Analyze(){
 	    pholead_PhoSCRemovalPFIsoNeutral = fTR->PhoSCRemovalPFIsoNeutralRCone[passing.at(0)];
 	    pholead_PhoSCRemovalPFIsoPhoton = fTR->PhoSCRemovalPFIsoPhotonRCone[passing.at(0)];
 	    pholead_PhoSCRemovalPFIsoCombined = pholead_PhoSCRemovalPFIsoCharged+pholead_PhoSCRemovalPFIsoNeutral+pholead_PhoSCRemovalPFIsoPhoton;
-	    if (pholead_PhoSCRemovalPFIsoCharged==999 || pholead_PhoSCRemovalPFIsoNeutral==999 || pholead_PhoSCRemovalPFIsoPhoton==999) dofill=false;
+	    if (pholead_PhoSCRemovalPFIsoCharged>=999 || pholead_PhoSCRemovalPFIsoNeutral>=999 || pholead_PhoSCRemovalPFIsoPhoton>=999) dofill=false;
 	  }
       }
       if (sel_cat==k2Drandomcone_template || ((sel_cat==k2Drandomconesideband_template || sel_cat==k2Drconeplusgenfake_template) && pass12_whoissiglike[sel_cat]==1)) {
@@ -834,7 +834,7 @@ void DiPhotonMiniTree::Analyze(){
 	  photrail_PhoSCRemovalPFIsoNeutral = fTR->PhoSCRemovalPFIsoNeutralRCone[passing.at(1)];
 	  photrail_PhoSCRemovalPFIsoPhoton = fTR->PhoSCRemovalPFIsoPhotonRCone[passing.at(1)];
 	  photrail_PhoSCRemovalPFIsoCombined = photrail_PhoSCRemovalPFIsoCharged+photrail_PhoSCRemovalPFIsoNeutral+photrail_PhoSCRemovalPFIsoPhoton;
-	  if (photrail_PhoSCRemovalPFIsoCharged==999 || photrail_PhoSCRemovalPFIsoNeutral==999 || photrail_PhoSCRemovalPFIsoPhoton==999) dofill=false;
+	  if (photrail_PhoSCRemovalPFIsoCharged>=999 || photrail_PhoSCRemovalPFIsoNeutral>=999 || photrail_PhoSCRemovalPFIsoPhoton>=999) dofill=false;
 	}
 
 	}
@@ -885,9 +885,9 @@ void DiPhotonMiniTree::Analyze(){
 	  if (eta>1.4442 && eta<1.566) continue;
 	  if (eta>2.5) continue;
 	  //changed 140930
-	  if (fTR->PhoMatchedPFPhotonOrElectronCand[passing.at(!pass12_whoissiglike[sel_cat])]==k) continue; 
-//	  if (fTR->PhoMatchedPFPhotonCand[passing.at(!pass12_whoissiglike[sel_cat])]==k) continue;	
-//	  if (fTR->PhoMatchedPFElectronCand[passing.at(!pass12_whoissiglike[sel_cat])]==k) continue;	
+	  if (fTR->PhoMatchedPFPhotonCand.size()>0) if (fTR->PhoMatchedPFPhotonCand[passing.at(!pass12_whoissiglike[sel_cat])]==k) continue;	
+	  if (fTR->PhoMatchedPFElectronCand.size()>0) if (fTR->PhoMatchedPFElectronCand[passing.at(!pass12_whoissiglike[sel_cat])]==k) continue;	
+	  if (fTR->PhoMatchedPFPhotonOrElectronCand.size()>0) if (fTR->PhoMatchedPFPhotonOrElectronCand[passing.at(!pass12_whoissiglike[sel_cat])]==k) continue;	
 	  bool removed = false;
 	  for (set<int>::iterator j=removals.begin(); j!=removals.end(); j++) if (k==*j) removed=true;
 	  if (removed) continue;
@@ -957,7 +957,7 @@ void DiPhotonMiniTree::Analyze(){
 	pholead_PhoSCRemovalPFIsoNeutral = fTR->PhoSCRemovalPFIsoNeutralRCone[passing.at(i)];
 	pholead_PhoSCRemovalPFIsoPhoton = fTR->PhoSCRemovalPFIsoPhotonRCone[passing.at(i)];
 	pholead_PhoSCRemovalPFIsoCombined = pholead_PhoSCRemovalPFIsoCharged+pholead_PhoSCRemovalPFIsoNeutral+pholead_PhoSCRemovalPFIsoPhoton;
-	if (pholead_PhoSCRemovalPFIsoCharged==999 || pholead_PhoSCRemovalPFIsoNeutral==999 || pholead_PhoSCRemovalPFIsoPhoton==999) dofill=false;
+	if (pholead_PhoSCRemovalPFIsoCharged>=999 || pholead_PhoSCRemovalPFIsoNeutral>=999 || pholead_PhoSCRemovalPFIsoPhoton>=999) dofill=false;
 	}
 
 	if (debug) cout << "here" << endl;
@@ -979,9 +979,9 @@ void DiPhotonMiniTree::Analyze(){
 	  float eta = fabs(fTR->PfCandEta[k]);
 	  if (eta>1.4442 && eta<1.566) continue;
 	  if (eta>2.5) continue;
-	  if (fTR->PhoMatchedPFPhotonOrElectronCand[passing.at(i)]==k) continue;
-	 // if (fTR->PhoMatchedPFPhotonCand[passing.at(i)]==k) continue;	
-	 // if (fTR->PhoMatchedPFElectronCand[passing.at(i)]==k) continue;	
+	  if (fTR->PhoMatchedPFPhotonCand.size()>0) if (fTR->PhoMatchedPFPhotonCand[passing.at(i)]==k) continue;	
+	  if (fTR->PhoMatchedPFElectronCand.size()>0) if (fTR->PhoMatchedPFElectronCand[passing.at(i)]==k) continue;
+	  if (fTR->PhoMatchedPFPhotonOrElectronCand.size()>0) if (fTR->PhoMatchedPFPhotonOrElectronCand[passing.at(i)]==k) continue;
 	  bool removed = false;
 	  for (set<int>::iterator j=removals.begin(); j!=removals.end(); j++) if (k==*j) removed=true;
 	  if (removed) continue;
@@ -2141,9 +2141,9 @@ void DiPhotonMiniTree::FillVetoObjects(TreeReader *fTR, int phoqi, TString mod){
 
 std::set<int> DiPhotonMiniTree::GetPFCandIDedRemovals(TreeReader *fTR, int phoqi){
   std::set<int> out;
-  out.insert(fTR->PhoMatchedPFPhotonOrElectronCand[phoqi]);
-  //out.insert(fTR->PhoMatchedPFPhotonCand[phoqi]);
-  //out.insert(fTR->PhoMatchedPFElectronCand[phoqi]);
+  if (fTR->PhoMatchedPFPhotonCand.size()>0) out.insert(fTR->PhoMatchedPFPhotonCand[phoqi]);
+  if (fTR->PhoMatchedPFElectronCand.size()>0) out.insert(fTR->PhoMatchedPFElectronCand[phoqi]);
+  if (fTR->PhoMatchedPFPhotonOrElectronCand.size()>0) out.insert(fTR->PhoMatchedPFPhotonOrElectronCand[phoqi]);
   return out;
 };
 
@@ -2209,9 +2209,10 @@ std::set<int> DiPhotonMiniTree::GetPFCandWithFootprintRemoval(TreeReader *fTR, i
     TVector3 sc_position = TVector3(fTR->SCX[scindex],fTR->SCY[scindex],fTR->SCZ[scindex]);
 
     bool inside=false;
-     if (fTR->PhoMatchedPFPhotonOrElectronCand[phoqi]==i) continue;
- //  if (fTR->PhoMatchedPFPhotonCand[phoqi]==i) continue;
- //  if (fTR->PhoMatchedPFElectronCand[phoqi]==i) continue;
+
+    if (fTR->PhoMatchedPFPhotonCand.size()>0)           if (fTR->PhoMatchedPFPhotonCand[phoqi]==i) continue;
+    if (fTR->PhoMatchedPFElectronCand.size()>0)         if (fTR->PhoMatchedPFElectronCand[phoqi]==i) continue;
+    if (fTR->PhoMatchedPFPhotonOrElectronCand.size()>0) if (fTR->PhoMatchedPFPhotonOrElectronCand[phoqi]==i) continue;
 
     for (int j=0; j<nxtals; j++){
       
@@ -2504,6 +2505,9 @@ std::pair<float,float> DiPhotonMiniTree::PFPhotonIsolationFromMinitree(int phoqi
   } // end pf cand loop
 
 
+  result1 *= IsolationGeometricCorrectionFactor(matched_eta1);
+  result2 *= IsolationGeometricCorrectionFactor(matched_eta2);
+
   return std::make_pair<float,float>(float(result1),float(result2));
 
 };
@@ -2554,11 +2558,11 @@ float DiPhotonMiniTree::PFIsolation(int phoqi, float rotation_phi, TString compo
     if (pfeta>2.5) continue;
     if (isbarrel && fabs(pfeta)>1.4442) continue;
     if (!isbarrel && fabs(pfeta)<1.566) continue;
-//140930
-    if (fTR->PhoMatchedPFPhotonOrElectronCand[phoqi]==i) continue;
- //   if (fTR->PhoMatchedPFPhotonCand[phoqi]==i) continue;
- //  if (fTR->PhoMatchedPFElectronCand[phoqi]==i) continue;
- 
+
+    if (fTR->PhoMatchedPFPhotonCand.size()>0)           if (fTR->PhoMatchedPFPhotonCand[phoqi]==i) continue;
+    if (fTR->PhoMatchedPFElectronCand.size()>0)         if (fTR->PhoMatchedPFElectronCand[phoqi]==i) continue;
+    if (fTR->PhoMatchedPFPhotonOrElectronCand.size()>0) if (fTR->PhoMatchedPFPhotonOrElectronCand[phoqi]==i) continue;
+
     int type = FindPFCandType(fTR->PfCandPdgId[i]);
 
     if (!(type==0 || type==1 || type==2)) continue;
@@ -3720,11 +3724,9 @@ jetmatching_struct DiPhotonMiniTree::PFMatchPhotonToJet(int phoqi){ // returns (
   // prepare list of pfcands to represent the photon deposit
   std::set<int> pfcands = GetPrecalculatedFootprintPhoEl(phoqi);
   // changed 140930 as still old ntuple files
-
-
-if (fTR->PhoMatchedPFPhotonOrElectronCand[phoqi]>=0) pfcands.insert(fTR->PhoMatchedPFPhotonOrElectronCand[phoqi]);
-  //if (fTR->PhoMatchedPFPhotonCand[phoqi]>=0) pfcands.insert(fTR->PhoMatchedPFPhotonCand[phoqi]);
-//  if (fTR->PhoMatchedPFElectronCand[phoqi]>=0) pfcands.insert(fTR->PhoMatchedPFElectronCand[phoqi]);
+  if (fTR->PhoMatchedPFPhotonCand.size()>0)           if (fTR->PhoMatchedPFPhotonCand[phoqi]>=0) pfcands.insert(fTR->PhoMatchedPFPhotonCand[phoqi]);
+  if (fTR->PhoMatchedPFElectronCand.size()>0)         if (fTR->PhoMatchedPFElectronCand[phoqi]>=0) pfcands.insert(fTR->PhoMatchedPFElectronCand[phoqi]);
+  if (fTR->PhoMatchedPFPhotonOrElectronCand.size()>0) if (fTR->PhoMatchedPFPhotonOrElectronCand[phoqi]>=0) pfcands.insert(fTR->PhoMatchedPFPhotonOrElectronCand[phoqi]);
 
   // init ranking
   std::vector<std::pair<int,float> > ranking;
@@ -4534,4 +4536,47 @@ void DiPhotonMiniTree::FixMatchingStatusSherpa(int phoindex){
   else if (fTR->PhoMCmatchexitcode[phoindex]==4) return;
   else fTR->PhoMCmatchexitcode[phoindex]=2;
   
+};
+
+void DiPhotonMiniTree::FixIsolationGeometricCorrection(int phoindex){
+  if (fTR->PhotSCindex[phoindex]<0) return;
+  float correction = IsolationGeometricCorrectionFactor(fTR->SCEta[fTR->PhotSCindex[phoindex]]);
+  fTR->PhoSCRemovalPFIsoChargedPrimVtx[phoindex]*=correction;
+  fTR->PhoSCRemovalPFIsoNeutral[phoindex]*=correction;
+  fTR->PhoSCRemovalPFIsoPhoton[phoindex]*=correction;
+  fTR->PhoSCRemovalPFIsoChargedPrimVtxRCone[phoindex]*=correction;
+  fTR->PhoSCRemovalPFIsoNeutralRCone[phoindex]*=correction;
+  fTR->PhoSCRemovalPFIsoPhotonRCone[phoindex]*=correction;
+};
+
+
+float DiPhotonMiniTree::IsolationGeometricCorrectionFactor(float eta){
+
+  if (!do_isolation_geometric_correction) return 1;
+
+  assert (!do_recalc_isolation); // NOT IMPLEMENTED FOR RECALCULATED ISOLATION
+
+  // it must be eeend-eebegin > 2*conesize !!!
+  static const float conesize = 0.4;
+  static const float ebend = 1.4442;
+  static const float eebegin = 1.566;
+  static const float eeend = 2.5;
+
+  eta = fabs(eta);
+
+  float d = 999;
+  if (eta<=ebend && eta>ebend-conesize){
+    d = ebend-eta;
+  }
+  if (eta>=eebegin && eta<eebegin+conesize){
+    d = eta-eebegin;
+  } 
+  if (eta>eeend-conesize && eta<=eeend){
+    d = eeend-eta;
+  } 
+  if (d>=conesize) return 1;
+
+  float theta = 2. * TMath::ACos(d/conesize);
+  return 1./(1.-(theta-TMath::Sin(theta))/(2.*TMath::Pi()));
+
 };
