@@ -295,7 +295,9 @@ private:
   StatusScaleUpScaleDown CorrectPhotonR9(StatusScaleUpScaleDown status, std::vector<float> &unscaled_r9);
   StatusScaleUpScaleDown CorrectPhotonSieie(StatusScaleUpScaleDown status, std::vector<float> &unscaled_sieie);
   void CorrPhoton(TreeReader *fTR, int i, std::vector<float> *unscaled_r9);
-	
+
+
+  void VtxIsolation(TreeReader *fTR, vector<int> passing);  
   std::vector<int> ApplyPixelVeto(TreeReader *fTR, vector<int> passing, bool forelectron=0);
   std::vector<int> PhotonPreSelection(TreeReader *fTR, vector<int> passing);
   std::vector<int> GenLevelIsolationCut(TreeReader *fTR, vector<int> passing);
@@ -361,7 +363,7 @@ private:
   void FillJetsInfo(std::vector<int> passing, std::vector<int> passing_jets);
   void FillGenJetsInfo(std::vector<int> passing_gen, std::vector<int> passing_gen_jets);
 
-  jetmatching_struct PFMatchPhotonToJet(int a);
+  jetmatching_struct PFMatchPhotonToJet(int phoqi);
 
 
   //  double etaTransformation(float EtaParticle, float Zvertex);
