@@ -176,7 +176,8 @@ public:
 const int global_maxN_photonpfcandidates = 2000;
 const int global_maxN_vetoobjects = 200;
 const int global_maxN_jets = 200;
-
+const int max_vertices=50;
+const int max_photons_n=10;
 const int global_size_pfcandarrays = 30;
 
 const float global_dR_cut_acceptance = 0.45;
@@ -210,6 +211,7 @@ typedef struct {
   int nphotoncand;
   int nchargedcand;
   int nneutralcand;
+   std::vector<float> vtx_isos;
   std::vector<float> photoncandenergies;
   std::vector<float> chargedcandenergies;
   std::vector<float> neutralcandenergies;
@@ -299,7 +301,7 @@ private:
 
   void VtxIsolation(TreeReader *fTR, vector<int> passing);  
   std::vector<int> ApplyPixelVeto(TreeReader *fTR, vector<int> passing, bool forelectron=0);
-  std::vector<int> PhotonPreSelection(TreeReader *fTR, vector<int> passing);
+  std::vector<int> PhotonPreSelection(TreeReader *fTR, vector<int> passing, double weight);
   std::vector<int> GenLevelIsolationCut(TreeReader *fTR, vector<int> passing);
   std::vector<int> PhotonSelection(TreeReader *fTR, vector<int> passing, TString mode="");
   std::vector<int> SignalSelection(TreeReader *fTR, vector<int> passing);
@@ -363,7 +365,6 @@ private:
   void FillJetsInfo(std::vector<int> passing, std::vector<int> passing_jets);
   void FillGenJetsInfo(std::vector<int> passing_gen, std::vector<int> passing_gen_jets);
 
-  jetmatching_struct PFMatchPhotonToJet(int phoqi);
 
 
   //  double etaTransformation(float EtaParticle, float Zvertex);
@@ -386,8 +387,9 @@ private:
   float PFPhotonIsolationAroundMuon(int muqi, int *counter, std::vector<float> *energies = NULL, std::vector<float> *ets = NULL,  std::vector<float> *detas = NULL, std::vector<float> *dphis = NULL);
   void FillMuonInfo(std::vector<int> &passing_mu,std::vector<int> &passing);
   void FillVtxInfo(TreeReader *fTR,std::vector<int> &passing);
-void H2ggVtxInfo(TreeReader *fTR,std::vector<int> &passing); 
- bool PassPrimaryVertexFilter();
+  int H2ggVtxInfo(TreeReader *fTR,std::vector<int> &passing); 
+ 
+bool PassPrimaryVertexFilter();
 
   float DeltaPhiSigned(float phi1, float phi2);
 
@@ -475,6 +477,9 @@ void H2ggVtxInfo(TreeReader *fTR,std::vector<int> &passing);
   Float_t pholead_std_Vx,pholead_std_Vy,pholead_std_Vz;   
   Float_t photrail_std_Vx,photrail_std_Vy,photrail_std_Vz;
   Float_t diphoton_h2ggvtx_Vx,diphoton_h2ggvtx_Vy,diphoton_h2ggvtx_Vz;
+  Int_t pholead_vtxworstiso,photrail_vtxworstiso;
+  Float_t pholead_worstiso, photrail_worstiso, pholead_worstiso_rcone,photrail_worstiso_rcone;
+  Float_t pholead_isoh2ggvtx,photrail_isoh2ggvtx,pholead_rconeh2ggvtx, photrail_rconeh2ggvtx;
   Float_t primVtxx, primVtxy,primVtxz,primVtxPtSum;
   Float_t pholead_r9, photrail_r9;
   Float_t pholead_sieie, photrail_sieie;
@@ -501,6 +506,8 @@ void H2ggVtxInfo(TreeReader *fTR,std::vector<int> &passing);
   Float_t pholead_GenPhotonIsoDR04;
   Float_t photrail_GenPhotonIsoDR04;
  
+  Float_t pholead_GenPhotonPt;
+  Float_t photrail_GenPhotonPt;
   Int_t pholead_PhoMCmatchexitcode, photrail_PhoMCmatchexitcode;
 
   Float_t pholead_scarea, photrail_scarea;
@@ -532,6 +539,8 @@ void H2ggVtxInfo(TreeReader *fTR,std::vector<int> &passing);
   Int_t photrail_Npfcandphotonincone;
   Int_t photrail_Npfcandchargedincone;
   Int_t photrail_Npfcandneutralincone;
+//MQ
+ // Float_t vtx_isos[max_vertices + max_photons_n];
 
   Float_t pholead_photonpfcandenergies[global_size_pfcandarrays];
   Float_t pholead_chargedpfcandenergies[global_size_pfcandarrays];

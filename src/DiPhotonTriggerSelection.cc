@@ -59,13 +59,13 @@ if (isdata){
     }
 
   }
-
+//if (global_is2012){
     if (global_is2012 && !ismumug){
       nametriggers.push_back("HLT_Photon36_R9Id85_OR_CaloId10_Iso50_Photon22_R9Id85_OR_CaloId10_Iso50_v");
     }
     else if(global_is2012 && ismumug){
-	    nametriggers.push_back("HLT_Mu17_TkMu8_v");
-	 //   cout << "Info 0: right trigger" << endl;
+    nametriggers.push_back("HLT_Mu17_TkMu8_v");
+	   cout << "Info 0: right trigger" << endl;
     }    
   
 
@@ -105,5 +105,5 @@ for (vector<string>::const_iterator it=triggers.begin(); it!=triggers.end(); it+
 
  return false;
 
-
+}
 
